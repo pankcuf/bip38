@@ -665,7 +665,8 @@ impl core::fmt::Display for Error {
             Error::PubKey => write!(f, "invalid public key"),
             Error::ScryptFn => write!(f, "failure on scrypt function"),
             Error::ScryptParam => write!(f, "invalid scrypt parameter"),
-            Error::WifKey => write!(f, "invalid wif private key")
+            Error::WifKey => write!(f, "invalid wif private key"),
+            Error::Aes256 => write!(f, "invalid slice for aes256")
         }
     }
 }
