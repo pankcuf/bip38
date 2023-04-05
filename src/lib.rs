@@ -9,7 +9,7 @@
 //! #### Encryption
 //!
 //! ```
-//! use bip38::{Encrypt, EncryptWif, Error};
+//! use bip38::{Encrypt, EncryptWif, Error, P2WPKH};
 //!
 //! // true => compress
 //! assert_eq!(
@@ -27,11 +27,11 @@
 //!
 //! // wif
 //! assert_eq!(
-//!     "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".encrypt_wif("strong_pass"),
+//!     "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".encrypt_wif("strong_pass", P2WPKH, PRE_WIFB),
 //!     Ok(String::from("6PYMgbeR64ypE4g8ZQhGo7ScudV5BLz1vMFUCs49AWpW3jVNWfH6cAdTi2"))
 //! );
 //! assert_eq!(
-//!     "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh".encrypt_wif("strong_pass"),
+//!     "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh".encrypt_wif("strong_pass", P2WPKH, PRE_WIFB),
 //!     Ok(String::from("6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2"))
 //! );
 //! ```
@@ -39,30 +39,30 @@
 //! #### Decryption
 //!
 //! ```
-//! use bip38::{Decrypt, Error};
+//! use bip38::{Decrypt, Error, P2WPKH};
 //!
 //! assert_eq!(
-//!     "6PYMgbeR64ypE4g8ZQhGo7ScudV5BLz1vMFUCs49AWpW3jVNWfH6cAdTi2".decrypt("strong_pass"),
+//!     "6PYMgbeR64ypE4g8ZQhGo7ScudV5BLz1vMFUCs49AWpW3jVNWfH6cAdTi2".decrypt("strong_pass", P2WPKH),
 //!     Ok(([0x11; 32], true)) // compress
 //! );
 //! assert_eq!(
-//!     "6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2".decrypt("strong_pass"),
+//!     "6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2".decrypt("strong_pass", P2WPKH),
 //!     Ok(([0x11; 32], false)) // uncompress
 //! );
 //! assert_eq!(
-//!     "6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2".decrypt("wrong_pass"),
+//!     "6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2".decrypt("wrong_pass", P2WPKH),
 //!     Err(Error::Pass)
 //! );
 //!
 //! // wif
 //! assert_eq!(
 //!     "6PYMgbeR64ypE4g8ZQhGo7ScudV5BLz1vMFUCs49AWpW3jVNWfH6cAdTi2"
-//!         .decrypt_to_wif("strong_pass"),
+//!         .decrypt_to_wif("strong_pass", P2WPKH, PRE_WIFB),
 //!     Ok(String::from("KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp"))
 //! );
 //! assert_eq!(
 //!     "6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2"
-//!         .decrypt_to_wif("strong_pass"),
+//!         .decrypt_to_wif("strong_pass", P2WPKH, PRE_WIFB),
 //!     Ok(String::from("5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh"))
 //! );
 //! ```
@@ -70,16 +70,16 @@
 //! #### Generation (elliptic curve multiplication, not deterministic)
 //!
 //! ```
-//! use bip38::{Decrypt, Generate};
+//! use bip38::{Decrypt, Generate, P2WPKH};
 //!
 //! // true => compress
-//! assert!("passphrase".generate(true).unwrap().starts_with("6Pn"));
+//! assert!("passphrase".generate(true, P2WPKH).unwrap().starts_with("6Pn"));
 //!
 //! // false => uncompress
-//! assert!("passphrase".generate(false).unwrap().starts_with("6Pf"));
+//! assert!("passphrase".generate(false, P2WPKH).unwrap().starts_with("6Pf"));
 //!
 //! // ぽー
-//! assert!("バンドメイド".generate(true).unwrap().decrypt("バンドメイド").is_ok());
+//! assert!("バンドメイド".generate(true, P2WPKH).unwrap().decrypt("バンドメイド", P2WPKH).is_ok());
 //! ```
 //!
 //! # Boolean flag
@@ -95,10 +95,10 @@
 //! This crate handle the normalization (`nfc`) of the passphrase as specified on `bip-0038`.
 //!
 //! ```
-//! use bip38::{Decrypt, Encrypt};
+//! use bip38::{Decrypt, Encrypt, P2WPKH};
 //!
 //! assert_eq!(
-//!     [0xba; 32].encrypt("ΜΟΛΩΝ ΛΑΒΕ", true).unwrap().decrypt("ΜΟΛΩΝ ΛΑΒΕ").unwrap(),
+//!     [0xba; 32].encrypt("ΜΟΛΩΝ ΛΑΒΕ", true, P2WPKH).unwrap().decrypt("ΜΟΛΩΝ ΛΑΒΕ", P2WPKH).unwrap(),
 //!     ([0xba; 32], true)
 //! );
 //! ```
@@ -121,16 +121,16 @@
 //! #### Decrypting
 //!
 //! ```
-//! use bip38::Decrypt;
+//! use bip38::{Decrypt, P2WPKH};
 //!
 //! let user_ekey = String::from("6PnVMRLWZnQQGjLJPnzGnBM2hBwvT8padAsHToFXwhZBFQF1e6nckKXFG9");
 //! let user_pass = String::from("ultra_secret_pass");
 //!
-//! let (private_key, compress) = user_ekey.decrypt(&user_pass).unwrap_or_else(|err| {
+//! let (private_key, compress) = user_ekey.decrypt(&user_pass, P2WPKH).unwrap_or_else(|err| {
 //!     eprintln!("{}", err); // in case of invalid passphrase or invalid encrypted private key
 //!     std::process::exit(1);
 //! });
-//! let wif = user_ekey.decrypt_to_wif(&user_pass).unwrap_or_else(|err| {
+//! let wif = user_ekey.decrypt_to_wif(&user_pass, P2WPKH, PRE_WIFB).unwrap_or_else(|err| {
 //!     eprintln!("{}", err);
 //!     std::process::exit(2);
 //! });
@@ -139,7 +139,7 @@
 //! #### Encrypting
 //!
 //! ```
-//! use bip38::{Encrypt, EncryptWif};
+//! use bip38::{Encrypt, EncryptWif, P2WPKH};
 //!
 //! let informed_wif_key = "L4DczGWRanBGXnun83Fs9HcPCaXXq7ngxZrBY13Phdsw36WU1rQA";
 //! let internal_prv_key = [0xd0; 32];
@@ -149,7 +149,7 @@
 //!     eprintln!("{}", err); // if the private key could not generate a valid bitcoin address
 //!     std::process::exit(1);
 //! });
-//! let eprvk_from_wif = informed_wif_key.encrypt_wif(&user_pass).unwrap_or_else(|err| {
+//! let eprvk_from_wif = informed_wif_key.encrypt_wif(&user_pass, P2WPKH, PRE_WIFB).unwrap_or_else(|err| {
 //!     eprintln!("{}", err); // in case of invalid wif/decoded private key
 //!     std::process::exit(2);
 //! });
@@ -159,11 +159,11 @@
 //! #### Generating (elliptic curve multiplication)
 //!
 //! ```
-//! use bip38::Generate;
+//! use bip38::{Generate, P2WPKH};
 //!
 //! let user_pass = String::from("a_good_pass_please");
 //!
-//! let encrypted_prv_key = user_pass.generate(false).unwrap_or_else(|err| {
+//! let encrypted_prv_key = user_pass.generate(false, P2WPKH).unwrap_or_else(|err| {
 //!     eprintln!("{}", err); // if the private key could not generate an address (a rare case)
 //!     std::process::exit(1);
 //! });
@@ -217,6 +217,12 @@ const PRE_WIFB: u8 = 0x80;
 /// First character of a wif uncompressed secret key.
 const PRE_WIFU: &str = "5";
 
+pub const P2WPKH: u8 = 0x00;
+pub const DASH_PUBKEY_VERSION: u8 = 0x4c;
+pub const DASH_PUBKEY_TEST_VERSION: u8 = 0x8c;
+pub const DASH_PRIVKEY_VERSION: u8 = 0xcc;
+pub const DASH_PRIVKEY_TEST_VERSION: u8 = 0xef;
+
 /// Error variants of `bip38` crate.
 ///
 /// The only errors that are intended to be handle are:
@@ -264,8 +270,9 @@ trait BytesManipulation {
     /// Receives bytes and return 32 bytes of a dual sha256 hash.
     fn hash256(&self) -> [u8; 32];
 
-    /// Create an p2wpkh address according length bytes of the public key.
-    fn p2wpkh(&self) -> Result<String, Error>;
+    /// Create an address according length bytes of the public key for network version.
+    /// P2WPKH: 0, DASH: ...
+    fn to_address(&self, version: u8) -> Result<String, Error>;
 }
 
 /// Allow decryption of bitcoin encrypted private keys in `srt` format.
@@ -282,24 +289,24 @@ pub trait Decrypt {
     ///
     ///
     /// ```
-    /// use bip38::Decrypt;
+    /// use bip38::{Decrypt, P2WPKH};
     ///
     /// // decryption of non elliptic curve multiplication
     /// assert_eq!(
-    ///     "6PYMgbeR6XCsX4yJx8E52vW4PJDoTiu1QeFLn81KoW6Shye5DZ4ZnDauno".decrypt("weakPass"),
+    ///     "6PYMgbeR6XCsX4yJx8E52vW4PJDoTiu1QeFLn81KoW6Shye5DZ4ZnDauno".decrypt("weakPass", P2WPKH),
     ///     Ok(([0x11; 32], true)) // indication to compress the public key of this private key
     /// );
     /// assert_eq!(
-    ///     "6PRVo8whL3QbdrXpKk3gP2dGuxDbuvMsMqUq2imVigrm8oyRbvBoRUsbB3".decrypt("weakPass"),
+    ///     "6PRVo8whL3QbdrXpKk3gP2dGuxDbuvMsMqUq2imVigrm8oyRbvBoRUsbB3".decrypt("weakPass", P2WPKH),
     ///     Ok(([0x11; 32], false)) // indication do not compress the public key
     /// );
     ///
     /// // decryption of elliptic curve multiplication
     /// assert!(
-    ///     "6PnPQGcDuPhCMmXzTebiryx8zHxr8PZvUJccSxarn9nLHVLX7yVj6Wcoj9".decrypt("weakPass").is_ok()
+    ///     "6PnPQGcDuPhCMmXzTebiryx8zHxr8PZvUJccSxarn9nLHVLX7yVj6Wcoj9".decrypt("weakPass", P2WPKH).is_ok()
     /// );
     /// assert!(
-    ///     "6PfVV4eYCodt6tRiHbHH356MX818xZvcN54oNd1rCr8Cbme3273xWAgBhx".decrypt("notWeak?").is_ok()
+    ///     "6PfVV4eYCodt6tRiHbHH356MX818xZvcN54oNd1rCr8Cbme3273xWAgBhx".decrypt("notWeak?", P2WPKH).is_ok()
     /// );
     /// ```
     ///
@@ -315,25 +322,25 @@ pub trait Decrypt {
     /// * `Error::Base58` is returned if an non `base58` character is found.
     ///
     /// ```
-    /// use bip38::{Decrypt, Error};
+    /// use bip38::{Decrypt, Error, P2WPKH};
     ///
     /// assert!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt("Satoshi").is_ok()
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt("Satoshi", P2WPKH).is_ok()
     /// );
     /// assert_eq!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt("Nakamoto"),
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt("Nakamoto", P2WPKH),
     ///     Err(Error::Pass)
     /// );
     /// assert_eq!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByQ".decrypt("Satoshi"), // ← Q
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByQ".decrypt("Satoshi", P2WPKH), // ← Q
     ///     Err(Error::Checksum)
     /// );
     /// assert_eq!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy".decrypt("Satoshi"), // ← q?
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy".decrypt("Satoshi", P2WPKH), // ← q?
     ///     Err(Error::EncKey)
     /// );
     /// assert_eq!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy!".decrypt("Satoshi"), // ← !
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy!".decrypt("Satoshi", P2WPKH), // ← !
     ///     Err(Error::Base58)
     /// );
     /// ```
@@ -344,14 +351,14 @@ pub trait Decrypt {
     /// `bip-0038`.
     ///
     /// ```
-    /// use bip38::Decrypt;
+    /// use bip38::{Decrypt, P2WPKH};
     ///
     /// assert!(
     ///     "6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn"
-    ///         .decrypt("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}").is_ok()
+    ///         .decrypt("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}", P2WPKH).is_ok()
     /// );
     /// ```
-    fn decrypt(&self, pass: &str) -> Result<([u8; 32], bool), Error>;
+    fn decrypt(&self, pass: &str, version: u8) -> Result<([u8; 32], bool), Error>;
 
     /// Decrypt an encrypted bitcoin private key in `str`format (both non-ec and ec), resulting on
     /// a `wif` private key.
@@ -364,25 +371,25 @@ pub trait Decrypt {
     ///
     ///
     /// ```
-    /// use bip38::Decrypt;
+    /// use bip38::{Decrypt, P2WPKH};
     ///
     /// // decryption of non elliptic curve multiplication
     /// assert_eq!(
-    ///     "6PYMgbeR6XCsX4yJx8E52vW4PJDoTiu1QeFLn81KoW6Shye5DZ4ZnDauno".decrypt_to_wif("weakPass"),
+    ///     "6PYMgbeR6XCsX4yJx8E52vW4PJDoTiu1QeFLn81KoW6Shye5DZ4ZnDauno".decrypt_to_wif("weakPass", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp"))
     /// );
     /// assert_eq!(
-    ///     "6PRVo8whL3QbdrXpKk3gP2dGuxDbuvMsMqUq2imVigrm8oyRbvBoRUsbB3".decrypt_to_wif("weakPass"),
+    ///     "6PRVo8whL3QbdrXpKk3gP2dGuxDbuvMsMqUq2imVigrm8oyRbvBoRUsbB3".decrypt_to_wif("weakPass", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh"))
     /// );
     ///
     /// // decryption of elliptic curve multiplication
     /// assert_eq!(
-    ///     "6PnPQGcDuPhCMmXzTebiryx8zHxr8PZvUJccSxarn9nLHVLX7yVj6Wcoj9".decrypt_to_wif("weakPass"),
+    ///     "6PnPQGcDuPhCMmXzTebiryx8zHxr8PZvUJccSxarn9nLHVLX7yVj6Wcoj9".decrypt_to_wif("weakPass", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("Kyo7rXp5Qygn5qUFS39wR9DsxfrznTUc8XJeaHVSWhkVnhC4NVWE"))
     /// );
     /// assert_eq!(
-    ///     "6PfVV4eYCodt6tRiHbHH356MX818xZvcN54oNd1rCr8Cbme3273xWAgBhx".decrypt_to_wif("notWeak?"),
+    ///     "6PfVV4eYCodt6tRiHbHH356MX818xZvcN54oNd1rCr8Cbme3273xWAgBhx".decrypt_to_wif("notWeak?", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("5JPeaPgoWj6R9CEnSrvmGJh36e3cxRpGGpJ3mzTeK6M88Hc3Ttm"))
     /// );
     /// ```
@@ -399,26 +406,26 @@ pub trait Decrypt {
     /// * `Error::Base58` is returned if an non `base58` character is found.
     ///
     /// ```
-    /// use bip38::{Decrypt, Error};
+    /// use bip38::{Decrypt, Error, P2WPKH};
     ///
     /// assert_eq!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt_to_wif("Satoshi"),
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi5"))
     /// );
     /// assert_eq!(
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt_to_wif("Nakamoto"),
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt_to_wif("Nakamoto", P2WPKH, PRE_WIFB),
     ///     Err(Error::Pass)
     /// );
     /// assert_eq!( // Q
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByQ".decrypt_to_wif("Satoshi"),
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByQ".decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB),
     ///     Err(Error::Checksum)
     /// );
     /// assert_eq!( // q?
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy".decrypt_to_wif("Satoshi"),
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy".decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB),
     ///     Err(Error::EncKey)
     /// );
     /// assert_eq!( // !
-    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy!".decrypt_to_wif("Satoshi"),
+    ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWBy!".decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB),
     ///     Err(Error::Base58)
     /// );
     /// ```
@@ -429,15 +436,15 @@ pub trait Decrypt {
     /// `bip-0038`.
     ///
     /// ```
-    /// use bip38::Decrypt;
+    /// use bip38::{Decrypt, P2WPKH};
     ///
     /// assert_eq!(
     ///     "6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn"
-    ///         .decrypt_to_wif("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}"),
+    ///         .decrypt_to_wif("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("5Jajm8eQ22H3pGWLEVCXyvND8dQZhiQhoLJNKjYXk9roUFTMSZ4"))
     /// );
     /// ```
-    fn decrypt_to_wif(&self, pass: &str) -> Result<String, Error>;
+    fn decrypt_to_wif(&self, pass: &str, pub_version: u8, priv_version: u8) -> Result<String, Error>;
 }
 
 /// Allow encryption of bitcoin private keys in `[u8; 32]` format.
@@ -452,14 +459,14 @@ pub trait Encrypt {
     /// # Examples
     ///
     /// ```
-    /// use bip38::Encrypt;
+    /// use bip38::{Encrypt, P2WPKH};
     ///
     /// assert_eq!(
-    ///     [0x11; 32].encrypt("weakPass", true).unwrap(),
+    ///     [0x11; 32].encrypt("weakPass", true, P2WPKH).unwrap(),
     ///     "6PYMgbeR6XCsX4yJx8E52vW4PJDoTiu1QeFLn81KoW6Shye5DZ4ZnDauno"
     /// );
     /// assert_eq!(
-    ///     [0x11; 32].encrypt("weakPass", false).unwrap(),
+    ///     [0x11; 32].encrypt("weakPass", false, P2WPKH).unwrap(),
     ///     "6PRVo8whL3QbdrXpKk3gP2dGuxDbuvMsMqUq2imVigrm8oyRbvBoRUsbB3"
     /// );
     /// ```
@@ -472,10 +479,10 @@ pub trait Encrypt {
     /// the developer using the crate.
     ///
     /// ```
-    /// use bip38::{Encrypt, Error};
+    /// use bip38::{Encrypt, Error, P2WPKH};
     ///
-    /// assert_eq!([0x00; 32].encrypt("oh_no!", true), Err(Error::PrvKey));
-    /// assert_eq!([0xff; 32].encrypt("oh_no!", true), Err(Error::PrvKey));
+    /// assert_eq!([0x00; 32].encrypt("oh_no!", true, P2WPKH), Err(Error::PrvKey));
+    /// assert_eq!([0xff; 32].encrypt("oh_no!", true, P2WPKH), Err(Error::PrvKey));
     /// ```
     ///
     /// # Passphrase
@@ -483,18 +490,18 @@ pub trait Encrypt {
     /// This function handle the normalization (`nfc`) of the passphrase as specified on
     /// `bip-0038`.
     /// ```
-    /// use bip38::Encrypt;
+    /// use bip38::{Encrypt, P2WPKH};
     ///
     /// assert_eq!(
     ///     [
     ///         0x64, 0xee, 0xab, 0x5f, 0x9b, 0xe2, 0xa0, 0x1a, 0x83, 0x65, 0xa5, 0x79, 0x51, 0x1e,
     ///         0xb3, 0x37, 0x3c, 0x87, 0xc4, 0x0d, 0xa6, 0xd2, 0xa2, 0x5f, 0x05, 0xbd, 0xa6, 0x8f,
     ///         0xe0, 0x77, 0xb6, 0x6e
-    ///     ].encrypt("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}", false),
+    ///     ].encrypt("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}", false, P2WPKH),
     ///     Ok(String::from("6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn"))
     /// );
     /// ```
-    fn encrypt(&self, pass: &str, compress: bool) -> Result<String, Error>;
+    fn encrypt(&self, pass: &str, compress: bool, version: u8) -> Result<String, Error>;
 }
 
 /// Allow encryption of bitcoin private keys in the `wif` format.
@@ -507,14 +514,14 @@ pub trait EncryptWif {
     /// # Examples
     ///
     /// ```
-    /// use bip38::EncryptWif;
+    /// use bip38::{EncryptWif, P2WPKH};
     ///
     /// assert_eq!(
-    ///     "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".encrypt_wif("weakPass"),
+    ///     "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".encrypt_wif("weakPass", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("6PYMgbeR6XCsX4yJx8E52vW4PJDoTiu1QeFLn81KoW6Shye5DZ4ZnDauno"))
     /// );
     /// assert_eq!(
-    ///     "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh".encrypt_wif("weakPass"),
+    ///     "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh".encrypt_wif("weakPass", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("6PRVo8whL3QbdrXpKk3gP2dGuxDbuvMsMqUq2imVigrm8oyRbvBoRUsbB3"))
     /// );
     /// ```
@@ -536,26 +543,26 @@ pub trait EncryptWif {
     ///
     ///
     /// ```
-    /// use bip38::{EncryptWif, Error};
+    /// use bip38::{EncryptWif, Error, P2WPKH};
     ///
     /// assert_eq!(
-    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi5".encrypt_wif("Satoshi"),
+    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi5".encrypt_wif("Satoshi", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq"))
     /// );
     /// assert_eq!(
-    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi!".encrypt_wif("Satoshi"), // !
+    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi!".encrypt_wif("Satoshi", P2WPKH, PRE_WIFB), // !
     ///     Err(Error::Base58)
     /// );
     /// assert_eq!(
-    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi6".encrypt_wif("Satoshi"), // 6
+    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi6".encrypt_wif("Satoshi", P2WPKH, PRE_WIFB), // 6
     ///     Err(Error::Checksum)
     /// );
     /// assert_eq!(
-    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi55".encrypt_wif("Satoshi"), // 55
+    ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi55".encrypt_wif("Satoshi", P2WPKH, PRE_WIFB), // 55
     ///     Err(Error::WifKey)
     /// );
     /// assert_eq!( // the payload of this wif is [0x00; 32]
-    ///     "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73NUBByJr".encrypt_wif("Satoshi"),
+    ///     "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73NUBByJr".encrypt_wif("Satoshi", P2WPKH, PRE_WIFB),
     ///     Err(Error::PrvKey)
     /// );
     /// ```
@@ -565,15 +572,15 @@ pub trait EncryptWif {
     /// This function handle the normalization (`nfc`) of the passphrase as specified on
     /// `bip-0038`.
     /// ```
-    /// use bip38::EncryptWif;
+    /// use bip38::{EncryptWif, P2WPKH};
     ///
     /// assert_eq!(
     ///     "5Jajm8eQ22H3pGWLEVCXyvND8dQZhiQhoLJNKjYXk9roUFTMSZ4"
-    ///         .encrypt_wif("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}"),
+    ///         .encrypt_wif("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}", P2WPKH, PRE_WIFB),
     ///     Ok(String::from("6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn"))
     /// );
     /// ```
-    fn encrypt_wif(&self, pass: &str) -> Result<String, Error>;
+    fn encrypt_wif(&self, pass: &str, pub_version: u8, priv_version: u8) -> Result<String, Error>;
 }
 
 /// Allow generation of encrypted private keys using elliptic curve multiplication.
@@ -593,16 +600,16 @@ pub trait Generate {
     /// # Examples
     ///
     /// ```
-    /// use bip38::{Decrypt, Generate};
+    /// use bip38::{Decrypt, Generate, P2WPKH};
     ///
     /// // true => compress
-    /// assert!("hopefully_a_strong_passphrase".generate(true).unwrap().starts_with("6Pn"));
+    /// assert!("hopefully_a_strong_passphrase".generate(true, P2WPKH).unwrap().starts_with("6Pn"));
     ///
     /// // false => uncompress
-    /// assert!("hopefully_a_strong_passphrase".generate(false).unwrap().starts_with("6Pf"));
+    /// assert!("hopefully_a_strong_passphrase".generate(false, P2WPKH).unwrap().starts_with("6Pf"));
     ///
-    /// assert!("バンドメイド".generate(true).unwrap().decrypt("バンドメイド").is_ok());
-    /// assert!("くるっぽー！".generate(false).unwrap().decrypt("くるっぽー！").is_ok());
+    /// assert!("バンドメイド".generate(true, P2WPKH).unwrap().decrypt("バンドメイド", P2WPKH).is_ok());
+    /// assert!("くるっぽー！".generate(false, P2WPKH).unwrap().decrypt("くるっぽー！", P2WPKH).is_ok());
     /// ```
     ///
     /// # Errors
@@ -618,14 +625,14 @@ pub trait Generate {
     /// `bip-0038`.
     ///
     /// ```
-    /// use bip38::{Decrypt, Generate};
+    /// use bip38::{Decrypt, Generate, P2WPKH};
     ///
     /// assert!(
-    ///     "\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}".generate(true).unwrap()
-    ///         .decrypt("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}").is_ok()
+    ///     "\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}".generate(true, P2WPKH).unwrap()
+    ///         .decrypt("\u{03d2}\u{0301}\u{0000}\u{010400}\u{01f4a9}", P2WPKH).is_ok()
     /// );
     /// ```
-    fn generate(&self, compress: bool) -> Result<String, Error>;
+    fn generate(&self, compress: bool, version: u8) -> Result<String, Error>;
 }
 
 /// Internal trait to manipulate private keys (32 bytes).
@@ -634,7 +641,7 @@ trait PrivateKeyManipulation {
     fn public(&self, compress: bool) -> Result<Vec<u8>, Error>;
 
     /// Generate a representation of a secret key in wif format.
-    fn wif(&self, compress: bool) -> String;
+    fn wif(&self, compress: bool, version: u8) -> String;
 }
 
 /// Internal Functions to manipulate strings.
@@ -643,13 +650,13 @@ trait StringManipulation {
     fn decode_base58ck(&self) -> Result<Vec<u8>, Error>;
 
     /// Decode a secret key encoded in base58 returning bytes and compression.
-    fn decode_wif(&self) -> Result<([u8; 32], bool), Error>;
+    fn decode_wif(&self, version: u8) -> Result<([u8; 32], bool), Error>;
 
     /// Decrypt encrypted private key with ec multiply mode.
-    fn decrypt_ec(&self, pass: &str) -> Result<([u8; 32], bool), Error>;
+    fn decrypt_ec(&self, pass: &str, version: u8) -> Result<([u8; 32], bool), Error>;
 
     /// Decrypt a non-ec encrypted private key.
-    fn decrypt_non_ec(&self, pass: &str) -> Result<([u8; 32], bool), Error>;
+    fn decrypt_non_ec(&self, pass: &str, version: u8) -> Result<([u8; 32], bool), Error>;
 }
 
 impl core::fmt::Display for Error {
@@ -675,7 +682,7 @@ impl BytesManipulation for [u8] {
     #[inline]
     fn encode_base58ck(&self) -> String {
         let mut decoded = self.to_vec();
-        decoded.append(&mut decoded.hash256()[..4].to_vec());
+        decoded.extend_from_slice(&decoded.hash256()[..4]);
         bs58::encode(decoded).into_string()
     }
 
@@ -693,25 +700,24 @@ impl BytesManipulation for [u8] {
         result
     }
 
-    #[inline]
-    fn p2wpkh(&self) -> Result<String, Error> {
+    fn to_address(&self, version: u8) -> Result<String, Error> {
         if self.len() != NBBY_PUBC && self.len() != NBBY_PUBU { return Err(Error::NbPubB); }
-        let mut address_bytes = vec![0x00];
-        address_bytes.append(&mut self.hash160().to_vec());
+        let mut address_bytes = vec![version];
+        address_bytes.extend_from_slice(&self.hash160());
         Ok(address_bytes.encode_base58ck())
     }
 }
 
 impl Decrypt for str {
     #[inline]
-    fn decrypt(&self, pass: &str) -> Result<([u8; 32], bool), Error> {
+    fn decrypt(&self, pass: &str, version: u8) -> Result<([u8; 32], bool), Error> {
         Ok(
             if self.len() != LEN_EKEY || (self.is_char_boundary(2) && &self[..2] != PRE_EKEY) {
                 return Err(Error::EncKey);
             } else if self.decode_base58ck()?[..2] == PRE_NON_EC {
-                self.decrypt_non_ec(pass)?
+                self.decrypt_non_ec(pass, version)?
             } else if self.decode_base58ck()?[..2] == PRE_EC {
-                self.decrypt_ec(pass)?
+                self.decrypt_ec(pass, version)?
             } else {
                 return Err(Error::EncKey);
             }
@@ -719,26 +725,26 @@ impl Decrypt for str {
     }
 
     #[inline]
-    fn decrypt_to_wif(&self, pass: &str) -> Result<String, Error> {
-        let raw = self.decrypt(pass)?;
-        let wif = raw.0.wif(raw.1);
+    fn decrypt_to_wif(&self, pass: &str, pub_version: u8, priv_version: u8) -> Result<String, Error> {
+        let raw = self.decrypt(pass, pub_version)?;
+        let wif = raw.0.wif(raw.1, priv_version);
         Ok(wif)
     }
 }
 
 impl EncryptWif for str {
     #[inline]
-    fn encrypt_wif(&self, pass: &str) -> Result<String, Error> {
-        let raw_prvk = self.decode_wif()?;
-        let eprvk = raw_prvk.0.encrypt(pass, raw_prvk.1)?;
+    fn encrypt_wif(&self, pass: &str, pub_version: u8, priv_version: u8) -> Result<String, Error> {
+        let raw_prvk = self.decode_wif(priv_version)?;
+        let eprvk = raw_prvk.0.encrypt(pass, raw_prvk.1, pub_version)?;
         Ok(eprvk)
     }
 }
 
 impl Encrypt for [u8; 32] {
     #[inline]
-    fn encrypt(&self, pass: &str, compress: bool) -> Result<String, Error> {
-        let address = self.public(compress)?.p2wpkh()?;
+    fn encrypt(&self, pass: &str, compress: bool, version: u8) -> Result<String, Error> {
+        let address = self.public(compress)?.to_address(version)?;
         let checksum = &address.as_bytes().hash256()[..4];
         let mut scrypt_key = [0x00; 64];
 
@@ -777,7 +783,7 @@ impl Encrypt for [u8; 32] {
 
 impl Generate for str {
     #[inline]
-    fn generate(&self, compress: bool) -> Result<String, Error> {
+    fn generate(&self, compress: bool, version: u8) -> Result<String, Error> {
         let mut owner_salt = [0x00; 8];
         let mut pass_factor = [0x00; 32];
         let mut seed_b = [0x00; 24];
@@ -807,7 +813,7 @@ impl Generate for str {
             pass_point_mul.serialize_uncompressed().to_vec()
         };
 
-        let address = pubk.p2wpkh()?;
+        let address = pubk.to_address(version)?;
         let address_hash = &address.as_bytes().hash256()[..4];
         let mut salt = [0x00; 12];
         let mut seed_b_pass = [0x00; 64];
@@ -877,9 +883,9 @@ impl PrivateKeyManipulation for [u8; 32] {
     }
 
     #[inline]
-    fn wif(&self, compress: bool) -> String {
-        let mut decoded: Vec<u8> = vec![PRE_WIFB];
-        decoded.append(&mut self.to_vec());
+    fn wif(&self, compress: bool, version: u8) -> String {
+        let mut decoded: Vec<u8> = vec![version];
+        decoded.extend_from_slice(self);
         if compress { decoded.push(0x01); }
         decoded.encode_base58ck()
     }
@@ -897,14 +903,13 @@ impl StringManipulation for str {
     }
 
     #[inline]
-    fn decode_wif(&self) -> Result<([u8; 32], bool), Error> {
+    fn decode_wif(&self, version: u8) -> Result<([u8; 32], bool), Error> {
         if (!self.is_char_boundary(1) || !PRE_WIFC.contains(&self[..1]) ||
             self.len() != LEN_WIFC) && (!self.starts_with(PRE_WIFU) || self.len() != LEN_WIFU) {
             return Err(Error::WifKey);
         }
         let raw_bytes = self.decode_base58ck()?;
-        if (raw_bytes.len() != NBBY_WIFC && raw_bytes.len() != NBBY_WIFU) ||
-            raw_bytes[0] != PRE_WIFB {
+        if (raw_bytes.len() != NBBY_WIFC && raw_bytes.len() != NBBY_WIFU) || raw_bytes[0] != version {
             return Err(Error::WifKey)
         }
         let mut result = [0x00; 32];
@@ -913,7 +918,7 @@ impl StringManipulation for str {
     }
 
     #[inline]
-    fn decrypt_ec(&self, pass: &str) -> Result<([u8; 32], bool), Error> {
+    fn decrypt_ec(&self, pass: &str, version: u8) -> Result<([u8; 32], bool), Error> {
         let eprvk = self.decode_base58ck()?;
         if eprvk[..2] != PRE_EC { return Err(Error::EncKey); }
         let address_hash = &eprvk[3..7];
@@ -926,7 +931,6 @@ impl StringManipulation for str {
         let owner_salt = &eprvk[7..15 - (flag_byte & 0x04) as usize];
         let mut pre_factor = [0x00; 32];
         let mut pass_factor = [0x00; 32];
-
         let password = pass.nfc().collect::<String>();
         scrypt::scrypt(
             password.as_bytes(),
@@ -937,8 +941,8 @@ impl StringManipulation for str {
 
         if has_lot {
             let mut tmp: Vec<u8> = Vec::new();
-            tmp.append(&mut pre_factor.to_vec());
-            tmp.append(&mut owner_entropy.to_vec());
+            tmp.extend_from_slice(&pre_factor);
+            tmp.extend_from_slice(owner_entropy);
             pass_factor[..].copy_from_slice(&tmp.hash256());
         } else {
             pass_factor = pre_factor;
@@ -946,7 +950,6 @@ impl StringManipulation for str {
 
         let pass_point = pass_factor.public(true)?;
         let mut seed_b_pass = [0x00; 64];
-
         scrypt::scrypt(
             &pass_point,
             &eprvk[3..15], // 1024 log2 = 10
@@ -996,16 +999,14 @@ impl StringManipulation for str {
         result[..].copy_from_slice(&prv[..]);
 
         let public_key_data = result.public(compress)?;
-        let address = public_key_data.p2wpkh()?;
+        let address = public_key_data.to_address(version)?;
         let checksum = &address.as_bytes().hash256()[..4];
-
         if checksum != address_hash { return Err(Error::Pass) }
-
         Ok((result, compress))
     }
 
     #[inline]
-    fn decrypt_non_ec(&self, pass: &str) -> Result<([u8; 32], bool), Error> {
+    fn decrypt_non_ec(&self, pass: &str, version: u8) -> Result<([u8; 32], bool), Error> {
         let eprvk = self.decode_base58ck()?;
         if eprvk[..2] != PRE_NON_EC { return Err(Error::EncKey); }
         let compress = (eprvk[2] & 0x20) == 0x20;
@@ -1037,7 +1038,7 @@ impl StringManipulation for str {
         prvk[16..].copy_from_slice(&derived_half2);
 
         let public_key_data = prvk.public(compress)?;
-        let address = public_key_data.p2wpkh()?;
+        let address = public_key_data.to_address(version)?;
         let checksum = &address.as_bytes().hash256()[..4];
         if checksum != salt { return Err(Error::Pass) }
         Ok((prvk, compress))
@@ -1138,31 +1139,31 @@ mod tests {
     #[test]
     fn test_decode_wif() {
         assert_eq!(
-            "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".decode_wif(),
+            "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".decode_wif(PRE_WIFB),
             Ok(([0x11; 32], true))
         );
         assert_eq!(
-            "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh".decode_wif(),
+            "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh".decode_wif(PRE_WIFB),
             Ok(([0x11; 32], false))
         );
         assert_eq!(
-            "KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9".decode_wif(),
+            "KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9".decode_wif(PRE_WIFB),
             Ok(([0x69; 32], true))
         );
         assert_eq!(
-            "5JciBbkdYdjKKE9rwZ7c1XscwwcLBbv9aJyeZeWQi2gZnHeiX57".decode_wif(),
+            "5JciBbkdYdjKKE9rwZ7c1XscwwcLBbv9aJyeZeWQi2gZnHeiX57".decode_wif(PRE_WIFB),
             Ok(([0x69; 32], false))
         );
         assert_eq!(
-            ["KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9", "a"].concat().decode_wif(),
+            ["KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9", "a"].concat().decode_wif(PRE_WIFB),
             Err(Error::WifKey)
         );
         assert_eq!(
-            "KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9".replace("d", "b").decode_wif(),
+            "KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9".replace("d", "b").decode_wif(PRE_WIFB),
             Err(Error::Checksum)
         );
-        assert_eq!(["a"; 51].concat().decode_wif(), Err(Error::WifKey));
-        assert_eq!(["a"; 52].concat().decode_wif(), Err(Error::WifKey));
+        assert_eq!(["a"; 51].concat().decode_wif(PRE_WIFB), Err(Error::WifKey));
+        assert_eq!(["a"; 52].concat().decode_wif(PRE_WIFB), Err(Error::WifKey));
     }
 
     #[test]
@@ -1171,25 +1172,25 @@ mod tests {
         for (idx, ekey) in TV_ENCRYPTED.iter().enumerate() {
             if idx > 2 { compress = true }
             if idx > 4 { compress = false }
-            assert_eq!(ekey.decrypt(TV_PASS[idx]), Ok((TV_KEY[idx], compress)));
+            assert_eq!(ekey.decrypt(TV_PASS[idx], P2WPKH), Ok((TV_KEY[idx], compress)));
         }
-        assert!(TV_ENCRYPTED[1].decrypt("Satoshi").is_ok());
-        assert_eq!(TV_ENCRYPTED[1].decrypt("wrong"), Err(Error::Pass));
-        assert_eq!(TV_ENCRYPTED[1].replace("X", "x").decrypt("Satoshi"), Err(Error::Checksum));
-        assert_eq!(TV_ENCRYPTED[1][1..].decrypt("Satoshi"), Err(Error::EncKey));
+        assert!(TV_ENCRYPTED[1].decrypt("Satoshi", P2WPKH).is_ok());
+        assert_eq!(TV_ENCRYPTED[1].decrypt("wrong", P2WPKH), Err(Error::Pass));
+        assert_eq!(TV_ENCRYPTED[1].replace("X", "x").decrypt("Satoshi", P2WPKH), Err(Error::Checksum));
+        assert_eq!(TV_ENCRYPTED[1][1..].decrypt("Satoshi", P2WPKH), Err(Error::EncKey));
     }
 
     #[test]
     fn test_decrypt_to_wif() {
         for (idx, ekey) in TV_ENCRYPTED.iter().enumerate() {
-            assert_eq!(ekey.decrypt_to_wif(TV_PASS[idx]).unwrap(), TV_WIF[idx]);
+            assert_eq!(ekey.decrypt_to_wif(TV_PASS[idx], P2WPKH, PRE_WIFB).unwrap(), TV_WIF[idx]);
         }
-        assert!(TV_ENCRYPTED[1].decrypt_to_wif("Satoshi").is_ok());
-        assert_eq!(TV_ENCRYPTED[1].decrypt_to_wif("wrong"), Err(Error::Pass));
+        assert!(TV_ENCRYPTED[1].decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB).is_ok());
+        assert_eq!(TV_ENCRYPTED[1].decrypt_to_wif("wrong",P2WPKH, PRE_WIFB), Err(Error::Pass));
         assert_eq!(
-            TV_ENCRYPTED[1].replace('X', "x").decrypt_to_wif("Satoshi"), Err(Error::Checksum)
+            TV_ENCRYPTED[1].replace('X', "x").decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB), Err(Error::Checksum)
         );
-        assert_eq!(TV_ENCRYPTED[1][1..].decrypt_to_wif("Satoshi"), Err(Error::EncKey));
+        assert_eq!(TV_ENCRYPTED[1][1..].decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB), Err(Error::EncKey));
     }
 
     #[test]
@@ -1203,34 +1204,34 @@ mod tests {
         let mut compress = false;
         for (idx, key) in TV_KEY[..5].iter().enumerate() { // the last four are ec-multiply
             if idx > 2 { compress = true }
-            assert_eq!(key.encrypt(TV_PASS[idx], compress).unwrap(), TV_ENCRYPTED[idx]);
+            assert_eq!(key.encrypt(TV_PASS[idx], compress, P2WPKH).unwrap(), TV_ENCRYPTED[idx]);
         }
-        assert_eq!([0x00; 32].encrypt("I'm_a_passphrase", true), Err(Error::PrvKey));
+        assert_eq!([0x00; 32].encrypt("I'm_a_passphrase", true, P2WPKH), Err(Error::PrvKey));
     }
 
     #[test]
     fn test_encrypt_wif() {
         for (idx, wif) in TV_WIF[..5].iter().enumerate() {
-            assert_eq!(wif.encrypt_wif(TV_PASS[idx]).unwrap(), TV_ENCRYPTED[idx]);
+            assert_eq!(wif.encrypt_wif(TV_PASS[idx], P2WPKH, PRE_WIFB).unwrap(), TV_ENCRYPTED[idx]);
         }
-        assert_eq!([TV_WIF[0], "a"].concat().encrypt_wif(TV_PASS[0]), Err(Error::WifKey));
-        assert_eq!(TV_WIF[0].replace('X', "!").encrypt_wif(TV_PASS[0]), Err(Error::Base58));
-        assert_eq!(TV_WIF[0].replace('X', "x").encrypt_wif(TV_PASS[0]), Err(Error::Checksum));
+        assert_eq!([TV_WIF[0], "a"].concat().encrypt_wif(TV_PASS[0], P2WPKH, PRE_WIFB), Err(Error::WifKey));
+        assert_eq!(TV_WIF[0].replace('X', "!").encrypt_wif(TV_PASS[0], P2WPKH, PRE_WIFB), Err(Error::Base58));
+        assert_eq!(TV_WIF[0].replace('X', "x").encrypt_wif(TV_PASS[0], P2WPKH, PRE_WIFB), Err(Error::Checksum));
         assert_eq!(
-            "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73NUBByJr".encrypt_wif("pass"), // zeroed
+            "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73NUBByJr".encrypt_wif("pass", P2WPKH, PRE_WIFB), // zeroed
             Err(Error::PrvKey)
         );
     }
 
     #[test]
     fn test_generate() {
-        assert!("バンドメイド".generate(true).unwrap().decrypt("バンドメイド").is_ok());
-        assert!("くるっぽー！".generate(false).unwrap() .decrypt("くるっぽー！").is_ok());
+        assert!("バンドメイド".generate(true, P2WPKH).unwrap().decrypt("バンドメイド", P2WPKH).is_ok());
+        assert!("くるっぽー！".generate(false, P2WPKH).unwrap() .decrypt("くるっぽー！", P2WPKH).is_ok());
         assert_eq!(
-            "something_really_dumb".generate(true).unwrap().decrypt("rocket_science"),
+            "something_really_dumb".generate(true, P2WPKH).unwrap().decrypt("rocket_science", P2WPKH),
             Err(Error::Pass)
         );
-        assert_eq!("a".generate(false).unwrap().decrypt("b"), Err(Error::Pass));
+        assert_eq!("a".generate(false, P2WPKH).unwrap().decrypt("b", P2WPKH), Err(Error::Pass));
     }
 
     #[test]
@@ -1263,7 +1264,7 @@ mod tests {
                 0x03, 0x4f, 0x35, 0x5b, 0xdc, 0xb7, 0xcc, 0x0a, 0xf7, 0x28, 0xef, 0x3c, 0xce, 0xb9,
                 0x61, 0x5d, 0x90, 0x68, 0x4b, 0xb5, 0xb2, 0xca, 0x5f, 0x85, 0x9a, 0xb0, 0xf0, 0xb7,
                 0x04, 0x07, 0x58, 0x71, 0xaa
-            ].p2wpkh().unwrap(),
+            ].to_address(P2WPKH).unwrap(),
             "1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9"
         );
         assert_eq!(
@@ -1271,7 +1272,7 @@ mod tests {
                 0x02, 0x66, 0x6b, 0xdf, 0x20, 0x25, 0xe3, 0x2f, 0x41, 0x08, 0x88, 0x99, 0xf2, 0xbc,
                 0xb4, 0xbf, 0x69, 0x83, 0x18, 0x7f, 0x38, 0x0e, 0x72, 0xfc, 0x7d, 0xee, 0x11, 0x5b,
                 0x1f, 0x99, 0x57, 0xcc, 0x72
-            ].p2wpkh().unwrap(),
+            ].to_address(P2WPKH).unwrap(),
             "1N7qxowv8SnfdBYhmvpxZxyjsYQDPd88ES"
         );
         assert_eq!(
@@ -1281,7 +1282,7 @@ mod tests {
                 0x04, 0x07, 0x58, 0x71, 0xaa, 0x38, 0x5b, 0x6b, 0x1b, 0x8e, 0xad, 0x80, 0x9c, 0xa6,
                 0x74, 0x54, 0xd9, 0x68, 0x3f, 0xcf, 0x2b, 0xa0, 0x34, 0x56, 0xd6, 0xfe, 0x2c, 0x4a,
                 0xbe, 0x2b, 0x07, 0xf0, 0xfb, 0xdb, 0xb2, 0xf1, 0xc1
-            ].p2wpkh().unwrap(),
+            ].to_address(P2WPKH).unwrap(),
             "1MsHWS1BnwMc3tLE8G35UXsS58fKipzB7a"
         );
         assert_eq!(
@@ -1291,7 +1292,7 @@ mod tests {
                 0x1f, 0x99, 0x57, 0xcc, 0x72, 0x9d, 0xd9, 0x76, 0x13, 0x1c, 0x4c, 0x8e, 0x12, 0xab,
                 0x10, 0x83, 0xca, 0x06, 0x54, 0xca, 0x5f, 0xdb, 0xca, 0xc8, 0xd3, 0x19, 0x8d, 0xaf,
                 0x90, 0xf5, 0x81, 0xb5, 0x91, 0xd5, 0x63, 0x79, 0xca
-            ].p2wpkh().unwrap(),
+            ].to_address(P2WPKH).unwrap(),
             "17iS4e5ib2t2Bj2UFjPbxSDdmecHNnCAwy"
         );
     }
@@ -1338,10 +1339,27 @@ mod tests {
 
     #[test]
     fn test_wif() {
-        assert_eq!([0x11; 32].wif(true), "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp");
-        assert_eq!([0x11; 32].wif(false), "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh");
-        assert_eq!([0x69; 32].wif(true), "KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9");
-        assert_eq!([0x69; 32].wif(false), "5JciBbkdYdjKKE9rwZ7c1XscwwcLBbv9aJyeZeWQi2gZnHeiX57");
-        assert_eq!([0xd0; 32].wif(true), "L4DczGWRanBGXnun83Fs9HcPCaXXq7ngxZrBY13Phdsw36WU1rQA");
+        assert_eq!([0x11; 32].wif(true, PRE_WIFB), "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp");
+        assert_eq!([0x11; 32].wif(false, PRE_WIFB), "5HwoXVkHoRM8sL2KmNRS217n1g8mPPBomrY7yehCuXC1115WWsh");
+        assert_eq!([0x69; 32].wif(true, PRE_WIFB), "KzkcmnPaJd7mqT47Rnk9XMGRfW2wfo7ar2M2o6Yoe6Rdgbg2bHM9");
+        assert_eq!([0x69; 32].wif(false, PRE_WIFB), "5JciBbkdYdjKKE9rwZ7c1XscwwcLBbv9aJyeZeWQi2gZnHeiX57");
+        assert_eq!([0xd0; 32].wif(true, PRE_WIFB), "L4DczGWRanBGXnun83Fs9HcPCaXXq7ngxZrBY13Phdsw36WU1rQA");
     }
+
+    #[test]
+    fn test_dash_bip38_key() {
+        let secret = [
+            0xdd, 0x3d, 0x68, 0xd4, 0x77, 0xfc, 0x92, 0x9d,
+            0x79, 0x69, 0x16, 0xfc, 0xee, 0xcb, 0x9d, 0xd6,
+            0xa8, 0xee, 0xb7, 0x50, 0xe4, 0x59, 0xcd, 0x4f,
+            0xd3, 0x70, 0x3f, 0x87, 0xc3, 0x63, 0x34, 0x0c
+        ];
+        let decrypted = "6PfV898iMrVs3d9gJSw5HTYyGhQRR5xRu5ji4GE6H5QdebT2YgK14Lu1E5".decrypt("TestingOneTwoThree", DASH_PUBKEY_VERSION).unwrap();
+        assert_eq!(decrypted, (secret, false));
+        let wif = decrypted.0.wif(decrypted.1, DASH_PRIVKEY_VERSION);
+        assert_eq!("7sEJGJRPeGoNBsW8tKAk4JH52xbxrktPfJcNxEx3uf622ZrGR5k", wif, "wrong wif");
+        let decrypted = "6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn".decrypt("foobar", DASH_PUBKEY_VERSION);
+        assert_eq!(decrypted, Err(Error::Pass));
+    }
+
 }
