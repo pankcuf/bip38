@@ -170,16 +170,11 @@
 //! ```
 
 use aes::Aes256;
-use aes::cipher::{
-    BlockDecrypt,
-    BlockEncrypt,
-    generic_array::GenericArray,
-    NewBlockCipher
-};
+use aes::cipher::{BlockDecrypt, BlockEncrypt, generic_array::GenericArray, KeyInit};
 use rand::RngCore;
-use ripemd160::Ripemd160;
+use ripemd::Ripemd160;
 use scrypt::Params;
-use secp256k1::{Secp256k1, SecretKey, PublicKey};
+use secp256k1::{Secp256k1, SecretKey, PublicKey, Scalar};
 use sha2::Digest;
 use unicode_normalization::UnicodeNormalization;
 
@@ -253,6 +248,9 @@ pub enum Error {
     ScryptParam,
     /// Invalid private key represented in `wif` format.
     WifKey,
+    /// If can't create Aes256 from slice.
+    Aes256,
+
 }
 
 /// Internal Functions to manipulate an arbitrary number of bytes [u8].
@@ -746,14 +744,14 @@ impl Encrypt for [u8; 32] {
         scrypt::scrypt(
             pass.nfc().collect::<String>().as_bytes(),
             checksum,
-            &Params::new(14, 8, 8).map_err(|_| Error::ScryptParam)?,
+            &Params::new(14, 8, 8, 64).map_err(|_| Error::ScryptParam)?,
             &mut scrypt_key
         ).map_err(|_| Error::ScryptFn)?;
 
         let mut half1 = [0x00; 32];
         half1[..].copy_from_slice(&scrypt_key[..32]);
 
-        let cipher = Aes256::new(GenericArray::from_slice(&scrypt_key[32..]));
+        let cipher = Aes256::new_from_slice(&scrypt_key[32..]).map_err(|_| Error::Aes256)?;
 
         for idx in 0..32 {
             half1[idx] ^= self[idx];
@@ -788,7 +786,7 @@ impl Generate for str {
         scrypt::scrypt(
             self.nfc().collect::<String>().as_bytes(),
             &owner_salt,
-            &Params::new(14, 8, 8).map_err(|_| Error::ScryptParam)?,
+            &Params::new(14, 8, 8, 32).map_err(|_| Error::ScryptParam)?,
             &mut pass_factor
         ).map_err(|_| Error::ScryptFn)?;
 
@@ -799,8 +797,8 @@ impl Generate for str {
         rand::thread_rng().fill_bytes(&mut seed_b);
 
         let factor_b = seed_b.hash256();
-
-        pass_point_mul.mul_assign(&Secp256k1::new(), &factor_b).map_err(|_| Error::EcMul)?;
+        let other = Scalar::from_be_bytes(factor_b).map_err(|_| Error::EcMul)?;
+        pass_point_mul = pass_point_mul.mul_tweak(&Secp256k1::new(), &other).map_err(|_| Error::EcMul)?;
 
         let pubk = if compress {
             pass_point_mul.serialize().to_vec()
@@ -819,7 +817,7 @@ impl Generate for str {
         scrypt::scrypt(
             &pass_point,
             &salt,
-            &Params::new(10, 1, 1).map_err(|_| Error::ScryptParam)?,
+            &Params::new(10, 1, 1, 64).map_err(|_| Error::ScryptParam)?,
             &mut seed_b_pass
         ).map_err(|_| Error::ScryptFn)?;
 
@@ -831,7 +829,7 @@ impl Generate for str {
             en_p1[idx] ^= derived_half1[idx];
         }
 
-        let cipher = Aes256::new(GenericArray::from_slice(derived_half2));
+        let cipher = Aes256::new_from_slice(derived_half2).map_err(|_| Error::Aes256)?;
         let mut encrypted_part1 = GenericArray::clone_from_slice(en_p1);
 
         cipher.encrypt_block(&mut encrypted_part1);
@@ -928,10 +926,11 @@ impl StringManipulation for str {
         let mut pre_factor = [0x00; 32];
         let mut pass_factor = [0x00; 32];
 
+        let password = pass.nfc().collect::<String>();
         scrypt::scrypt(
-            pass.nfc().collect::<String>().as_bytes(),
+            password.as_bytes(),
             owner_salt,
-            &Params::new(14, 8, 8).map_err(|_| Error::ScryptParam)?,
+            &Params::new(14, 8, 8, 32).map_err(|_| Error::ScryptParam)?,
             &mut pre_factor
         ).map_err(|_| Error::ScryptFn)?;
 
@@ -950,15 +949,14 @@ impl StringManipulation for str {
         scrypt::scrypt(
             &pass_point,
             &eprvk[3..15], // 1024 log2 = 10
-            &Params::new(10, 1, 1).map_err(|_| Error::ScryptParam)?,
+            &Params::new(10, 1, 1, 64).map_err(|_| Error::ScryptParam)?,
             &mut seed_b_pass
         ).map_err(|_| Error::ScryptFn)?;
 
         let derived_half1 = &seed_b_pass[..32];
         let derived_half2 = &seed_b_pass[32..];
 
-        let cipher = Aes256::new(GenericArray::from_slice(derived_half2));
-
+        let cipher = Aes256::new_from_slice(derived_half2).map_err(|_| Error::Aes256)?;
         let mut de_p2 = GenericArray::clone_from_slice(encrypted_p2);
 
         cipher.decrypt_block(&mut de_p2);
@@ -990,12 +988,14 @@ impl StringManipulation for str {
         let mut prv = SecretKey::from_slice(&pass_factor)
             .map_err(|_| Error::PrvKey)?;
 
-        prv.mul_assign(&factor_b).map_err(|_| Error::PrvKey)?;
+        let other = Scalar::from_be_bytes(factor_b).unwrap();
+        prv = prv.mul_tweak(&other).map_err(|_| Error::EcMul)?;
 
         let mut result = [0x00; 32];
         result[..].copy_from_slice(&prv[..]);
 
-        let address = result.public(compress)?.p2wpkh()?;
+        let public_key_data = result.public(compress)?;
+        let address = public_key_data.p2wpkh()?;
         let checksum = &address.as_bytes().hash256()[..4];
 
         if checksum != address_hash { return Err(Error::Pass) }
@@ -1009,16 +1009,17 @@ impl StringManipulation for str {
         if eprvk[..2] != PRE_NON_EC { return Err(Error::EncKey); }
         let compress = (eprvk[2] & 0x20) == 0x20;
         let mut scrypt_key = [0x00; 64];
+        let password = pass.nfc().collect::<String>();
+        let salt = &eprvk[3..7]; // 16384 log2 = 14
 
         scrypt::scrypt(
-            pass.nfc().collect::<String>().as_bytes(),
-            &eprvk[3..7], // 16384 log2 = 14
-            &Params::new(14, 8, 8).map_err(|_| Error::ScryptParam)?,
+            password.as_bytes(),
+            salt, // 16384 log2 = 14
+            &Params::new(14, 8, 8, 64).map_err(|_| Error::ScryptParam)?,
             &mut scrypt_key
         ).map_err(|_| Error::ScryptFn)?;
 
-        let cipher = Aes256::new(GenericArray::from_slice(&scrypt_key[32..]));
-
+        let cipher = Aes256::new_from_slice(&scrypt_key[32..]).map_err(|_| Error::Aes256)?;
         let mut derived_half1 = GenericArray::clone_from_slice(&eprvk[7..23]);
         let mut derived_half2 = GenericArray::clone_from_slice(&eprvk[23..39]);
 
@@ -1034,11 +1035,10 @@ impl StringManipulation for str {
         prvk[..16].copy_from_slice(&derived_half1);
         prvk[16..].copy_from_slice(&derived_half2);
 
-        let address = prvk.public(compress)?.p2wpkh()?;
+        let public_key_data = prvk.public(compress)?;
+        let address = public_key_data.p2wpkh()?;
         let checksum = &address.as_bytes().hash256()[..4];
-
-        if checksum != &eprvk[3..7] { return Err(Error::Pass) }
-
+        if checksum != salt { return Err(Error::Pass) }
         Ok((prvk, compress))
     }
 }
