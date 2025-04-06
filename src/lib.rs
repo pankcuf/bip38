@@ -9,21 +9,21 @@
 //! #### Encryption
 //!
 //! ```
-//! use bip38::{Encrypt, EncryptWif, Error, P2WPKH};
-//!
+//! use bip38::{Encrypt, EncryptWif, Error, P2WPKH, PRE_WIFB};
+//!  const DASH_PUBKEY_ADDRESS: u8 = 76;
 //! // true => compress
 //! assert_eq!(
-//!     [0x11; 32].encrypt("strong_pass", true).unwrap(),
+//!     [0x11; 32].encrypt("strong_pass", true, DASH_PUBKEY_ADDRESS).unwrap(),
 //!     "6PYMgbeR64ypE4g8ZQhGo7ScudV5BLz1vMFUCs49AWpW3jVNWfH6cAdTi2"
 //! );
 //! // false => uncompress
 //! assert_eq!(
-//!     [0x11; 32].encrypt("strong_pass", false).unwrap(),
+//!     [0x11; 32].encrypt("strong_pass", false, DASH_PUBKEY_ADDRESS).unwrap(),
 //!     "6PRVo8whLAhpRwSM5tJfmbAbZ9mCxjyZExaTXt6EMSXw3f5QJxMDFQQND2"
 //! );
 //! // [0x00; 32] is an invalid private key and cannot generate a valid bitcoin address
-//! assert_eq!([0x00; 32].encrypt("strong_pass", true), Err(Error::PrvKey));
-//! assert_eq!([0x00; 32].encrypt("strong_pass", false), Err(Error::PrvKey));
+//! assert_eq!([0x00; 32].encrypt("strong_pass", true, DASH_PUBKEY_ADDRESS), Err(Error::PrvKey));
+//! assert_eq!([0x00; 32].encrypt("strong_pass", false, DASH_PUBKEY_ADDRESS), Err(Error::PrvKey));
 //!
 //! // wif
 //! assert_eq!(
@@ -39,7 +39,7 @@
 //! #### Decryption
 //!
 //! ```
-//! use bip38::{Decrypt, Error, P2WPKH};
+//! use bip38::{Decrypt, Error, P2WPKH, PRE_WIFB};
 //!
 //! assert_eq!(
 //!     "6PYMgbeR64ypE4g8ZQhGo7ScudV5BLz1vMFUCs49AWpW3jVNWfH6cAdTi2".decrypt("strong_pass", P2WPKH),
@@ -121,7 +121,7 @@
 //! #### Decrypting
 //!
 //! ```
-//! use bip38::{Decrypt, P2WPKH};
+//! use bip38::{Decrypt, P2WPKH, PRE_WIFB};
 //!
 //! let user_ekey = String::from("6PnVMRLWZnQQGjLJPnzGnBM2hBwvT8padAsHToFXwhZBFQF1e6nckKXFG9");
 //! let user_pass = String::from("ultra_secret_pass");
@@ -139,13 +139,14 @@
 //! #### Encrypting
 //!
 //! ```
-//! use bip38::{Encrypt, EncryptWif, P2WPKH};
+//! use bip38::{Encrypt, EncryptWif, P2WPKH, PRE_WIFB};
 //!
 //! let informed_wif_key = "L4DczGWRanBGXnun83Fs9HcPCaXXq7ngxZrBY13Phdsw36WU1rQA";
 //! let internal_prv_key = [0xd0; 32];
 //! let user_pass = String::from("not_good_pass");
 //!
-//! let eprvk_from_raw = internal_prv_key.encrypt(&user_pass, true).unwrap_or_else(|err| {
+//! const DASH_PUBKEY_ADDRESS: u8 = 76;
+//! let eprvk_from_raw = internal_prv_key.encrypt(&user_pass, true, DASH_PUBKEY_ADDRESS).unwrap_or_else(|err| {
 //!     eprintln!("{}", err); // if the private key could not generate a valid bitcoin address
 //!     std::process::exit(1);
 //! });
@@ -171,7 +172,7 @@
 
 use aes::Aes256;
 use aes::cipher::{BlockDecrypt, BlockEncrypt, generic_array::GenericArray, KeyInit};
-use rand::RngCore;
+use secp256k1::rand::RngCore;
 use ripemd::Ripemd160;
 use scrypt::Params;
 use secp256k1::{Secp256k1, SecretKey, PublicKey, Scalar};
@@ -212,7 +213,7 @@ const PRE_NON_EC: [u8; 2] = [0x01, 0x42];
 const PRE_WIFC: &str = "KL";
 
 /// First byte of all wif encoded secret keys.
-const PRE_WIFB: u8 = 0x80;
+pub const PRE_WIFB: u8 = 0x80;
 
 /// First character of a wif uncompressed secret key.
 const PRE_WIFU: &str = "5";
@@ -371,7 +372,7 @@ pub trait Decrypt {
     ///
     ///
     /// ```
-    /// use bip38::{Decrypt, P2WPKH};
+    /// use bip38::{Decrypt, P2WPKH, PRE_WIFB};
     ///
     /// // decryption of non elliptic curve multiplication
     /// assert_eq!(
@@ -406,7 +407,7 @@ pub trait Decrypt {
     /// * `Error::Base58` is returned if an non `base58` character is found.
     ///
     /// ```
-    /// use bip38::{Decrypt, Error, P2WPKH};
+    /// use bip38::{Decrypt, Error, P2WPKH, PRE_WIFB};
     ///
     /// assert_eq!(
     ///     "6PRNFFkZc2NZ6dJqFfhRoFNMR9Lnyj7dYGrzdgXXVMXcxoKTePPX1dWByq".decrypt_to_wif("Satoshi", P2WPKH, PRE_WIFB),
@@ -436,7 +437,7 @@ pub trait Decrypt {
     /// `bip-0038`.
     ///
     /// ```
-    /// use bip38::{Decrypt, P2WPKH};
+    /// use bip38::{Decrypt, P2WPKH, PRE_WIFB};
     ///
     /// assert_eq!(
     ///     "6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn"
@@ -514,7 +515,7 @@ pub trait EncryptWif {
     /// # Examples
     ///
     /// ```
-    /// use bip38::{EncryptWif, P2WPKH};
+    /// use bip38::{EncryptWif, P2WPKH, PRE_WIFB};
     ///
     /// assert_eq!(
     ///     "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp".encrypt_wif("weakPass", P2WPKH, PRE_WIFB),
@@ -543,7 +544,7 @@ pub trait EncryptWif {
     ///
     ///
     /// ```
-    /// use bip38::{EncryptWif, Error, P2WPKH};
+    /// use bip38::{EncryptWif, Error, P2WPKH, PRE_WIFB};
     ///
     /// assert_eq!(
     ///     "5HtasZ6ofTHP6HCwTqTkLDuLQisYPah7aUnSKfC7h4hMUVw2gi5".encrypt_wif("Satoshi", P2WPKH, PRE_WIFB),
@@ -572,7 +573,7 @@ pub trait EncryptWif {
     /// This function handle the normalization (`nfc`) of the passphrase as specified on
     /// `bip-0038`.
     /// ```
-    /// use bip38::{EncryptWif, P2WPKH};
+    /// use bip38::{EncryptWif, P2WPKH, PRE_WIFB};
     ///
     /// assert_eq!(
     ///     "5Jajm8eQ22H3pGWLEVCXyvND8dQZhiQhoLJNKjYXk9roUFTMSZ4"
@@ -788,7 +789,7 @@ impl Generate for str {
         let mut pass_factor = [0x00; 32];
         let mut seed_b = [0x00; 24];
 
-        rand::thread_rng().fill_bytes(&mut owner_salt);
+        secp256k1::rand::thread_rng().fill_bytes(&mut owner_salt);
 
         scrypt::scrypt(
             self.nfc().collect::<String>().as_bytes(),
@@ -801,7 +802,7 @@ impl Generate for str {
 
         let mut pass_point_mul = PublicKey::from_slice(&pass_point).map_err(|_| Error::PubKey)?;
 
-        rand::thread_rng().fill_bytes(&mut seed_b);
+        secp256k1::rand::thread_rng().fill_bytes(&mut seed_b);
 
         let factor_b = seed_b.hash256();
         let other = Scalar::from_be_bytes(factor_b).map_err(|_| Error::EcMul)?;
